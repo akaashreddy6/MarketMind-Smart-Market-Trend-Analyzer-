@@ -2,10 +2,10 @@ import streamlit as st
 import random
 import pandas as pd
 
-# --- Page Config ---
+# --- Page Configuration ---
 st.set_page_config(page_title="MarketMind", layout="wide")
 
-# --- Session state initialization ---
+# --- Initialize session state ---
 if "users" not in st.session_state:
     st.session_state.users = {"admin": "12345"}  # default user
 if "logged_in" not in st.session_state:
@@ -24,7 +24,7 @@ PRODUCTS_DB = {
     "shoes": [40, 45, 50, 55],
 }
 
-# --- Utility Functions ---
+# --- Helper functions ---
 def calculate_trend(trend_history):
     last = trend_history[-1]
     prev = trend_history[-2]
@@ -47,33 +47,47 @@ def predict_sales(score):
 # --- Sign Up Page ---
 def signup_page():
     st.title("📝 Sign Up for MarketMind")
-    username = st.text_input("Choose a username")
-    password = st.text_input("Choose a password", type="password")
-    if st.button("Sign Up"):
-        if username in st.session_state.users:
-            st.error("Username already exists! Try a different one.")
-        elif not username or not password:
-            st.warning("Please enter both username and password.")
-        else:
-            st.session_state.users[username] = password
-            st.success("Sign-up successful! Please log in.")
+    username = st.text_input("Choose a username", key="signup_user")
+    password = st.text_input("Choose a password", type="password", key="signup_pass")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Sign Up"):
+            if not username or not password:
+                st.warning("Please enter both username and password.")
+            elif username in st.session_state.users:
+                st.error("Username already exists!")
+            else:
+                st.session_state.users[username] = password
+                st.success("Sign-up successful! Please log in.")
+                st.session_state.page = "login"
+                st.experimental_rerun()
+    with col2:
+        if st.button("Already have an account? Login"):
             st.session_state.page = "login"
-            st.experimental_rerun()  # <-- fixed: redirect to login immediately
+            st.experimental_rerun()
 
 # --- Login Page ---
 def login_page():
     st.title("📈 MarketMind Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if st.session_state.users.get(username) == password:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.page = "dashboard"
-            st.success(f"Welcome {username}!")
-            st.experimental_rerun()  # optional: rerun to refresh page
-        else:
-            st.error("Invalid credentials.")
+    username = st.text_input("Username", key="login_user")
+    password = st.text_input("Password", type="password", key="login_pass")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Login"):
+            if st.session_state.users.get(username) == password:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.session_state.page = "dashboard"
+                st.success(f"Welcome {username}!")
+                st.experimental_rerun()
+            else:
+                st.error("Invalid credentials.")
+    with col2:
+        if st.button("New user? Sign Up"):
+            st.session_state.page = "signup"
+            st.experimental_rerun()
 
 # --- Dashboard Page ---
 def dashboard_page():
@@ -123,4 +137,3 @@ elif st.session_state.page == "dashboard":
         st.warning("Please log in first!")
         st.session_state.page = "login"
         st.experimental_rerun()
-
