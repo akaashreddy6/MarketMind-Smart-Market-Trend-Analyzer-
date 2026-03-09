@@ -1,238 +1,175 @@
-
 import streamlit as st
-import random
 import pandas as pd
-import json
-import os
-import hashlib
-from sklearn.linear_model import LinearRegression
 import numpy as np
+import random
+from sklearn.linear_model import LinearRegression
 
-st.set_page_config(page_title="MarketMind AI", layout="wide")
+st.set_page_config(page_title="MarketMind Pro AI", layout="wide")
 
-# --- Users File ---
-USERS_FILE = "users.json"
-
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, "r") as f:
-            return json.load(f)
-    return {"admin": hash_password("12345")}
-
-def save_users(users_dict):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users_dict, f)
-
-# --- Session State ---
-if "users" not in st.session_state:
-    st.session_state.users = load_users()
-
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-
-if "username" not in st.session_state:
-    st.session_state.username = ""
-
-if "page" not in st.session_state:
-    st.session_state.page = "signup"
-
-# --- Product Database ---
-PRODUCTS_DB = {
-    "smartphone": [70, 75, 80, 85],
-    "laptop": [60, 65, 63, 68],
-    "headphones": [50, 55, 60, 70],
-    "book": [20, 25, 30, 28],
-    "shoes": [40, 45, 50, 55],
-    "tablet": [65, 70, 72, 78],
-    "smartwatch": [55, 60, 64, 69],
-    "camera": [50, 52, 55, 60],
-    "gaming console": [75, 78, 82, 90]
+# --------- UI Styling ---------
+st.markdown("""
+<style>
+.main-title{
+font-size:40px;
+font-weight:bold;
+color:#4CAF50;
 }
 
-# --- AI Prediction ---
-def predict_next_trend(history):
+.metric-card{
+background-color:#111;
+padding:15px;
+border-radius:10px;
+text-align:center;
+}
+</style>
+""", unsafe_allow_html=True)
 
-    X = np.array(range(len(history))).reshape(-1,1)
-    y = np.array(history)
+# --------- Product Database ---------
+PRODUCTS_DB = {
+    "smartphone":[70,75,80,85],
+    "laptop":[60,65,63,68],
+    "headphones":[50,55,60,70],
+    "shoes":[40,45,50,55],
+    "tablet":[65,70,72,78],
+    "smartwatch":[55,60,64,69],
+    "camera":[50,52,55,60],
+    "gaming console":[75,78,82,90]
+}
 
-    model = LinearRegression()
+# --------- AI Prediction ---------
+def predict_future(history, days=3):
+
+    X=np.array(range(len(history))).reshape(-1,1)
+    y=np.array(history)
+
+    model=LinearRegression()
     model.fit(X,y)
 
-    next_day = np.array([[len(history)]])
-    prediction = model.predict(next_day)
+    future=[]
 
-    return round(prediction[0],2)
+    for i in range(days):
+        next_day=np.array([[len(history)+i]])
+        pred=model.predict(next_day)[0]
+        future.append(round(pred,2))
 
-# --- Trend Status ---
-def calculate_trend(trend_history):
+    return future
 
-    last = trend_history[-1]
-    prev = trend_history[-2]
+# --------- Demand Score ---------
+def demand_score(score):
 
-    if last > prev:
-        return "Trending 🔥", last
-    elif last == prev:
-        return "Stable ➖", last
+    if score>80:
+        return "Very High 🔥"
+    elif score>65:
+        return "High 📈"
+    elif score>50:
+        return "Medium ➖"
     else:
-        return "Falling ❄️", last
+        return "Low 📉"
 
-# --- Recommendation ---
-def recommendation(score):
+# --------- Sidebar ---------
+st.sidebar.title("MarketMind AI")
 
-    if score > 80:
-        return "Invest 📈"
-    elif score > 60:
-        return "Hold ⏳"
-    else:
-        return "Avoid ⚠️"
+menu=st.sidebar.radio(
+"Navigation",
+["Dashboard","Product Analysis","Product Comparison","Top Trends"]
+)
 
-# --- Signup Page ---
-def signup_page():
+# --------- Dashboard ---------
+if menu=="Dashboard":
 
-    st.title("📝 MarketMind AI - Sign Up")
+    st.markdown("<div class='main-title'>📊 MarketMind AI Dashboard</div>",unsafe_allow_html=True)
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    st.write("AI-powered market trend analytics")
 
-    if st.button("Sign Up"):
+    # metrics
+    col1,col2,col3=st.columns(3)
 
-        if username in st.session_state.users:
-            st.error("Username exists")
+    total_products=len(PRODUCTS_DB)
 
-        else:
-            st.session_state.users[username] = hash_password(password)
-            save_users(st.session_state.users)
+    avg_score=int(np.mean([v[-1] for v in PRODUCTS_DB.values()]))
 
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.page = "dashboard"
+    top_product=max(PRODUCTS_DB,key=lambda x:PRODUCTS_DB[x][-1])
 
-# --- Login Page ---
-def login_page():
+    col1.metric("Products Tracked",total_products)
+    col2.metric("Average Trend Score",avg_score)
+    col3.metric("Top Product",top_product.title())
 
-    st.title("🤖 MarketMind AI Login")
+# --------- Product Analysis ---------
+elif menu=="Product Analysis":
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    st.header("🔍 Product Trend Analysis")
 
-    if st.button("Login"):
+    product=st.selectbox("Select Product",list(PRODUCTS_DB.keys()))
 
-        if st.session_state.users.get(username) == hash_password(password):
+    history=PRODUCTS_DB[product]
 
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.page = "dashboard"
+    score=history[-1]
 
-        else:
-            st.error("Invalid login")
+    future=predict_future(history)
 
-    if st.button("Create Account"):
-        st.session_state.page = "signup"
+    demand=demand_score(score)
 
-# --- Dashboard ---
-def dashboard_page():
+    col1,col2,col3=st.columns(3)
 
-    st.sidebar.write("Logged in as:", st.session_state.username)
+    col1.metric("Current Score",score)
+    col2.metric("AI Next Day Prediction",future[0])
+    col3.metric("Demand Level",demand)
 
-    if st.sidebar.button("Logout"):
-        st.session_state.logged_in = False
-        st.session_state.page = "login"
+    st.subheader("Trend Chart")
 
-    st.title("📊 MarketMind AI Dashboard")
+    dates=pd.date_range(end=pd.Timestamp.today(),periods=len(history))
 
-    st.sidebar.write("### Products")
+    df=pd.DataFrame({
+        "Date":dates,
+        "Trend":history
+    }).set_index("Date")
 
-    for p in PRODUCTS_DB:
-        st.sidebar.write(p)
+    st.line_chart(df)
 
-    st.divider()
+    # Forecast chart
+    st.subheader("AI Forecast")
 
-    # --- Top Trending ---
-    st.subheader("🔥 Top Trending Products")
+    forecast_df=pd.DataFrame({
+        "Day":[1,2,3],
+        "Predicted Score":future
+    })
 
-    trending = sorted(PRODUCTS_DB.items(), key=lambda x: x[1][-1], reverse=True)
+    st.bar_chart(forecast_df.set_index("Day"))
 
-    for p in trending[:3]:
-        st.write(p[0].title(), "Score:", p[1][-1])
+    st.dataframe(df)
 
-    st.divider()
+    csv=df.to_csv().encode()
 
-    product = st.text_input("Enter product")
+    st.download_button(
+        "Download Report",
+        csv,
+        "marketmind_report.csv",
+        "text/csv"
+    )
 
-    if st.button("Analyze"):
+# --------- Product Comparison ---------
+elif menu=="Product Comparison":
 
-        product = product.lower()
+    st.header("⚔️ Compare Products")
 
-        trend_history = PRODUCTS_DB.get(product, [random.randint(30,60) for _ in range(4)])
+    p1=st.selectbox("Product 1",list(PRODUCTS_DB.keys()))
+    p2=st.selectbox("Product 2",list(PRODUCTS_DB.keys()),index=1)
 
-        trend, score = calculate_trend(trend_history)
+    df=pd.DataFrame({
+        p1:PRODUCTS_DB[p1],
+        p2:PRODUCTS_DB[p2]
+    })
 
-        ai_prediction = predict_next_trend(trend_history)
+    st.line_chart(df)
 
-        rec = recommendation(score)
+# --------- Top Trends ---------
+elif menu=="Top Trends":
 
-        st.subheader(product.title())
+    st.header("🔥 Top Trending Products")
 
-        st.write("Trend:", trend)
-        st.write("Current Score:", score)
+    ranking=sorted(PRODUCTS_DB.items(),key=lambda x:x[1][-1],reverse=True)
 
-        st.write("🤖 AI Next Trend Prediction:", ai_prediction)
+    for i,(p,data) in enumerate(ranking):
 
-        st.write("Recommendation:", rec)
+        st.write(f"{i+1}. **{p.title()}** — Score: {data[-1]}")
 
-        dates = pd.date_range(end=pd.Timestamp.today(), periods=4)
-
-        df = pd.DataFrame({
-            "Date":dates,
-            "Trend":trend_history
-        })
-
-        df = df.set_index("Date")
-
-        st.line_chart(df)
-
-        st.dataframe(df)
-
-        csv = df.to_csv().encode()
-
-        st.download_button(
-            "Download Report",
-            csv,
-            "trend_report.csv",
-            "text/csv"
-        )
-
-    # --- Product Comparison ---
-    st.divider()
-
-    st.subheader("⚔️ Compare Products")
-
-    p1 = st.selectbox("Product 1", list(PRODUCTS_DB.keys()))
-    p2 = st.selectbox("Product 2", list(PRODUCTS_DB.keys()), index=1)
-
-    if st.button("Compare"):
-
-        df = pd.DataFrame({
-            p1:PRODUCTS_DB[p1],
-            p2:PRODUCTS_DB[p2]
-        })
-
-        st.line_chart(df)
-
-# --- Main App ---
-if st.session_state.page == "signup":
-    signup_page()
-
-elif st.session_state.page == "login":
-    login_page()
-
-elif st.session_state.page == "dashboard":
-
-    if st.session_state.logged_in:
-        dashboard_page()
-
-    else:
-        st.session_state.page = "login"
