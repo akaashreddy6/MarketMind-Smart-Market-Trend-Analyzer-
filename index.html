@@ -3,41 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MarketMind - Smart Market Trend Analyzer</title>
+<title>MarketMind – Smart Market Trend Analyzer</title>
 <link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
-
 <header>
-<h1>📈 MarketMind</h1>
-<p>Smart Market Trend Analyzer</p>
+  <div class="header-container">
+    <h1>📈 MarketMind</h1>
+    <p>Smart Market Trend Analyzer</p>
+  </div>
 </header>
 
-<div class="container">
+<main class="container">
+  <section class="search-box">
+    <input type="text" id="productInput" placeholder="Enter product name...">
+    <button id="analyzeBtn">Analyze</button>
+  </section>
 
-<div class="search-box">
-<input type="text" id="productInput" placeholder="Enter product name...">
-<button onclick="analyzeProduct()">Analyze</button>
-</div>
+  <section class="results-card" id="resultsCard" style="display:none;">
+    <h2>Product: <span id="productName">--</span></h2>
+    <p><strong>Trend:</strong> <span id="trendResult">--</span></p>
+    <p><strong>Score:</strong> <span id="scoreResult">--</span></p>
+    <p><strong>Prediction:</strong> <span id="predictionResult">--</span></p>
+    <p><strong>Recommendation:</strong> <span id="recommendationResult">--</span></p>
+    <canvas id="trendChart" width="400" height="200"></canvas>
+  </section>
 
-<div class="results">
-
-<h2>Trend Result</h2>
-<p id="trendResult">No analysis yet</p>
-
-<h2>Market Demand</h2>
-<p id="demandResult">--</p>
-
-<h2>Prediction</h2>
-<p id="predictionResult">--</p>
-
-</div>
-
-</div>
+  <div class="loading" id="loading" style="display:none;">
+    <div class="spinner"></div>
+    <p>Analyzing...</p>
+  </div>
+</main>
 
 <footer>
-<p>MarketMind © 2026</p>
+  <p>MarketMind © 2026</p>
 </footer>
 
 <script src="script.js"></script>
