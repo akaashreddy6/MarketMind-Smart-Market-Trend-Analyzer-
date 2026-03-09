@@ -1,14 +1,13 @@
 import streamlit as st
 import random
 import pandas as pd
-import requests
-from streamlit_lottie import st_lottie
 
+# --- Page Config ---
 st.set_page_config(page_title="MarketMind", layout="wide")
 
-# --- Session state initialization ---
+# --- Initialize session state ---
 if "users" not in st.session_state:
-    st.session_state.users = {"admin": "12345"}
+    st.session_state.users = {"admin": "12345"}  # default user
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -45,16 +44,12 @@ def predict_sales(score):
     else:
         return "Sales might decrease 📉", "Avoid"
 
-# --- Lottie Animation loader ---
-def load_lottie_url(url):
-    r = requests.get(url)
-    if r.status_code != 200:
-        return None
-    return r.json()
-
 # --- Sign-Up Page ---
 def signup_page():
     st.title("📝 Sign Up for MarketMind")
+    # Optional: Add a static logo
+    st.image("logo.png", width=150)  # Replace with your logo file
+
     username = st.text_input("Choose a username", key="signup_user")
     password = st.text_input("Choose a password", type="password", key="signup_pass")
     
@@ -74,12 +69,10 @@ def signup_page():
 
 # --- Login Page ---
 def login_page():
-    # Add animation for login page
-    lottie_login = load_lottie_url("https://assets7.lottiefiles.com/packages/lf20_jcikwtux.json")
-    if lottie_login:
-        st_lottie(lottie_login, height=200, key="login_anim")
-
     st.title("📈 MarketMind Login")
+    # Optional: Add a static logo
+    st.image("logo.png", width=150)
+
     username = st.text_input("Username", key="login_user")
     password = st.text_input("Password", type="password", key="login_pass")
     
@@ -106,11 +99,7 @@ def dashboard_page():
     st.title("📊 MarketMind Dashboard")
     st.write("Analyze market trends and get product recommendations")
 
-    # Optional: add a small animation for dashboard
-    lottie_dashboard = load_lottie_url("https://assets2.lottiefiles.com/packages/lf20_UJNc2t.json")
-    if lottie_dashboard:
-        st_lottie(lottie_dashboard, height=150, key="dash_anim")
-
+    # Input for product
     product_input = st.text_input("Enter product name:", key="product_input")
     if st.button("Analyze", key="analyze_btn") and product_input:
         product = product_input.strip().lower()
@@ -118,6 +107,7 @@ def dashboard_page():
         trend, score = calculate_trend(trend_history)
         prediction, recommendation = predict_sales(score)
 
+        # Display results
         st.subheader(f"Product: {product.title()}")
         st.write(f"**Trend:** {trend}")
         st.write(f"**Score:** {score}")
@@ -127,7 +117,7 @@ def dashboard_page():
             unsafe_allow_html=True
         )
 
-        # --- Date-wise graph ---
+        # --- Date-wise trend graph ---
         dates = pd.date_range(end=pd.Timestamp.today(), periods=4)
         df = pd.DataFrame({
             "Date": dates,
@@ -147,3 +137,4 @@ elif st.session_state.page == "dashboard":
     else:
         st.warning("Please log in first!")
         st.session_state.page = "login"
+
