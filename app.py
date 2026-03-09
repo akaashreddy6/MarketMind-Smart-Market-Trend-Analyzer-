@@ -1,28 +1,24 @@
 # backend/app.py
-import os
-os.system("pip install flask")
-
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+# marketmind_app.py
+import streamlit as st
 import random
+import pandas as pd
 
-app = Flask(__name__)
-CORS(app)  # Allow frontend to access
+st.set_page_config(page_title="MarketMind", layout="wide")
+
+st.title("📈 MarketMind – Smart Market Trend Analyzer")
+st.write("Analyze market trends and get product recommendations")
 
 # Simulated product database
 PRODUCTS_DB = {
-    "smartphone": {"trend_history": [70, 75, 80, 85]},
-    "laptop": {"trend_history": [60, 65, 63, 68]},
-    "headphones": {"trend_history": [50, 55, 60, 70]},
-    "book": {"trend_history": [20, 25, 30, 28]},
-    "shoes": {"trend_history": [40, 45, 50, 55]},
+    "smartphone": [70, 75, 80, 85],
+    "laptop": [60, 65, 63, 68],
+    "headphones": [50, 55, 60, 70],
+    "book": [20, 25, 30, 28],
+    "shoes": [40, 45, 50, 55],
 }
 
 def calculate_trend(trend_history):
-    """Determine trend direction and score"""
     last = trend_history[-1]
     prev = trend_history[-2]
     if last > prev:
@@ -33,7 +29,6 @@ def calculate_trend(trend_history):
         return "Falling ❄️", last
 
 def predict_sales(score):
-    """Predict sales and recommendation"""
     growth = random.randint(-10, 20) + (score // 5)
     if growth > 15:
         return "Sales likely to increase 📈", "Invest"
@@ -42,31 +37,28 @@ def predict_sales(score):
     else:
         return "Sales might decrease 📉", "Avoid"
 
-@app.route('/analyze', methods=['POST'])
-def analyze():
-    data = request.json
-    product = data.get("product", "").strip().lower()
+# --- Streamlit Input ---
+product_input = st.text_input("Enter product name:", "").strip().lower()
 
-    if not product:
-        return jsonify({"error": "No product provided"}), 400
-
-    product_info = PRODUCTS_DB.get(
-        product,
-        {"trend_history": [random.randint(20, 50) for _ in range(4)]}
+if st.button("Analyze") and product_input:
+    trend_history = PRODUCTS_DB.get(
+        product_input,
+        [random.randint(20, 50) for _ in range(4)]
     )
 
-    trend, score = calculate_trend(product_info["trend_history"])
+    trend, score = calculate_trend(trend_history)
     prediction, recommendation = predict_sales(score)
 
-    return jsonify({
-        "product": product.title(),
-        "trend": trend,
-        "score": score,
-        "prediction": prediction,
-        "recommendation": recommendation
+    # Display results
+    st.subheader(f"Product: {product_input.title()}")
+    st.write(f"**Trend:** {trend}")
+    st.write(f"**Score:** {score}")
+    st.write(f"**Prediction:** {prediction}")
+    st.markdown(f"**Recommendation:** <span style='color: {'green' if recommendation=='Invest' else 'orange' if recommendation=='Hold' else 'red'}'>{recommendation}</span>", unsafe_allow_html=True)
+
+    # Display trend chart
+    df = pd.DataFrame({
+        "Week": ["Week 1", "Week 2", "Week 3", "Week 4"],
+        "Trend Score": trend_history
     })
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
-
+    st.line_chart(df.set_index("Week"))
