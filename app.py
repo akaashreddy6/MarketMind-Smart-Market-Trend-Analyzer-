@@ -4,12 +4,19 @@ import streamlit as st
 import random
 import pandas as pd
 
+# --- Page Config ---
 st.set_page_config(page_title="MarketMind", layout="wide")
 
-st.title("📈 MarketMind – Smart Market Trend Analyzer")
-st.write("Analyze market trends and get product recommendations")
+# --- Mock Users ---
+USERS = {"admin": "12345", "user": "password"}
 
-# Simulated product database
+# --- Session State for login ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
+
+# --- Product Database ---
 PRODUCTS_DB = {
     "smartphone": [70, 75, 80, 85],
     "laptop": [60, 65, 63, 68],
@@ -18,6 +25,7 @@ PRODUCTS_DB = {
     "shoes": [40, 45, 50, 55],
 }
 
+# --- Utility Functions ---
 def calculate_trend(trend_history):
     last = trend_history[-1]
     prev = trend_history[-2]
@@ -37,28 +45,53 @@ def predict_sales(score):
     else:
         return "Sales might decrease 📉", "Avoid"
 
-# --- Streamlit Input ---
-product_input = st.text_input("Enter product name:", "").strip().lower()
+# --- Login Page ---
+def login_page():
+    st.title("📈 MarketMind Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        if USERS.get(username) == password:
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.success(f"Welcome {username}!")
+        else:
+            st.error("Invalid credentials")
 
-if st.button("Analyze") and product_input:
-    trend_history = PRODUCTS_DB.get(
-        product_input,
-        [random.randint(20, 50) for _ in range(4)]
-    )
+# --- Dashboard Page ---
+def dashboard_page():
+    st.sidebar.write(f"Logged in as: {st.session_state.username}")
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.experimental_rerun()
 
-    trend, score = calculate_trend(trend_history)
-    prediction, recommendation = predict_sales(score)
+    st.title("📊 MarketMind Dashboard")
+    st.write("Analyze market trends and get product recommendations")
 
-    # Display results
-    st.subheader(f"Product: {product_input.title()}")
-    st.write(f"**Trend:** {trend}")
-    st.write(f"**Score:** {score}")
-    st.write(f"**Prediction:** {prediction}")
-    st.markdown(f"**Recommendation:** <span style='color: {'green' if recommendation=='Invest' else 'orange' if recommendation=='Hold' else 'red'}'>{recommendation}</span>", unsafe_allow_html=True)
+    product_input = st.text_input("Enter product name:")
+    if st.button("Analyze") and product_input:
+        product = product_input.strip().lower()
+        trend_history = PRODUCTS_DB.get(product, [random.randint(20, 50) for _ in range(4)])
+        trend, score = calculate_trend(trend_history)
+        prediction, recommendation = predict_sales(score)
 
-    # Display trend chart
-    df = pd.DataFrame({
-        "Week": ["Week 1", "Week 2", "Week 3", "Week 4"],
-        "Trend Score": trend_history
-    })
-    st.line_chart(df.set_index("Week"))
+        # Display results
+        st.subheader(f"Product: {product.title()}")
+        st.write(f"**Trend:** {trend}")
+        st.write(f"**Score:** {score}")
+        st.write(f"**Prediction:** {prediction}")
+        st.markdown(f"**Recommendation:** <span style='color: {'green' if recommendation=='Invest' else 'orange' if recommendation=='Hold' else 'red'}'>{recommendation}</span>", unsafe_allow_html=True)
+
+        # Trend Chart
+        df = pd.DataFrame({
+            "Week": ["Week 1", "Week 2", "Week 3", "Week 4"],
+            "Trend Score": trend_history
+        })
+        st.line_chart(df.set_index("Week"))
+
+# --- Main ---
+if not st.session_state.logged_in:
+    login_page()
+else:
+    dashboard_page()
