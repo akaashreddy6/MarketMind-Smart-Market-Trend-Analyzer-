@@ -1,4 +1,6 @@
 # backend/app.py
+import os
+os.system("pip install flask")
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import random
@@ -62,3 +64,4 @@ def analyze():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
