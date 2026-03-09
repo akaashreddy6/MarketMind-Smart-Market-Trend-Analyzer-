@@ -5,7 +5,7 @@ import random
 
 st.set_page_config(page_title="MarketMind AI", layout="wide")
 
-# --------- Initialize product storage ---------
+# --------- Initialize product database ----------
 if "products_db" not in st.session_state:
     st.session_state.products_db = {
         "smartphone":[70,75,80,85],
@@ -20,7 +20,7 @@ if "products_db" not in st.session_state:
 
 PRODUCTS_DB = st.session_state.products_db
 
-# --------- AI Prediction (Linear Trend using numpy) ---------
+# --------- AI Prediction using numpy ----------
 def predict_future(history, days=3):
 
     x = np.arange(len(history))
@@ -36,7 +36,7 @@ def predict_future(history, days=3):
 
     return predictions
 
-# --------- Demand Score ---------
+# --------- Demand Score ----------
 def demand_score(score):
 
     if score > 80:
@@ -48,7 +48,17 @@ def demand_score(score):
     else:
         return "Low 📉"
 
-# --------- Sidebar ---------
+# --------- Investment Advice ----------
+def investment_advice(score):
+
+    if score > 80:
+        return "Invest 📈"
+    elif score > 60:
+        return "Hold ⏳"
+    else:
+        return "Avoid ⚠️"
+
+# --------- Sidebar ----------
 st.sidebar.title("📊 MarketMind AI")
 
 menu = st.sidebar.radio(
@@ -62,7 +72,7 @@ st.sidebar.write("### Tracked Products")
 for p in PRODUCTS_DB:
     st.sidebar.write("•", p.title())
 
-# --------- Dashboard ---------
+# --------- Dashboard ----------
 if menu == "Dashboard":
 
     st.title("📊 MarketMind AI Dashboard")
@@ -79,7 +89,7 @@ if menu == "Dashboard":
     col2.metric("Average Trend Score", avg_score)
     col3.metric("Top Product", top_product.title())
 
-# --------- Product Analysis ---------
+# --------- Product Analysis ----------
 elif menu == "Product Analysis":
 
     st.header("🔍 Product Trend Analysis")
@@ -90,9 +100,9 @@ elif menu == "Product Analysis":
 
         product = product.lower()
 
-        # If product not in database create data
         history = PRODUCTS_DB.get(product)
 
+        # If product not in database create data
         if history is None:
             history = [random.randint(30,70) for _ in range(4)]
             PRODUCTS_DB[product] = history
@@ -103,11 +113,14 @@ elif menu == "Product Analysis":
 
         demand = demand_score(score)
 
-        col1,col2,col3 = st.columns(3)
+        advice = investment_advice(score)
+
+        col1,col2,col3,col4 = st.columns(4)
 
         col1.metric("Current Score", score)
         col2.metric("Next Day Prediction", future[0])
         col3.metric("Demand Level", demand)
+        col4.metric("Investment Advice", advice)
 
         st.subheader("Trend History")
 
@@ -140,7 +153,7 @@ elif menu == "Product Analysis":
             "text/csv"
         )
 
-# --------- Product Comparison ---------
+# --------- Product Comparison ----------
 elif menu == "Product Comparison":
 
     st.header("⚔️ Compare Products")
@@ -160,9 +173,9 @@ elif menu == "Product Comparison":
         st.line_chart(df)
 
     else:
-        st.warning("Add at least two products using Product Analysis first.")
+        st.warning("Analyze at least two products first.")
 
-# --------- Top Trends ---------
+# --------- Top Trends ----------
 elif menu == "Top Trends":
 
     st.header("🔥 Top Trending Products")
@@ -171,7 +184,10 @@ elif menu == "Top Trends":
 
     for i,(p,data) in enumerate(ranking):
 
-        st.write(f"{i+1}. **{p.title()}** — Score: {data[-1]}")
+        advice = investment_advice(data[-1])
+
+        st.write(f"{i+1}. **{p.title()}** — Score: {data[-1]} — {advice}")
+
 
 
 
