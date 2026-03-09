@@ -5,7 +5,7 @@ import pandas as pd
 # --- Page Config ---
 st.set_page_config(page_title="MarketMind", layout="wide")
 
-# --- Initialize session state ---
+# --- Session State Initialization ---
 if "users" not in st.session_state:
     st.session_state.users = {"admin": "12345"}  # default user
 if "logged_in" not in st.session_state:
@@ -15,7 +15,7 @@ if "username" not in st.session_state:
 if "page" not in st.session_state:
     st.session_state.page = "signup"
 
-# --- Product database ---
+# --- Product Database ---
 PRODUCTS_DB = {
     "smartphone": [70, 75, 80, 85],
     "laptop": [60, 65, 63, 68],
@@ -24,7 +24,7 @@ PRODUCTS_DB = {
     "shoes": [40, 45, 50, 55],
 }
 
-# --- Helper functions ---
+# --- Helper Functions ---
 def calculate_trend(trend_history):
     last = trend_history[-1]
     prev = trend_history[-2]
@@ -47,8 +47,8 @@ def predict_sales(score):
 # --- Sign-Up Page ---
 def signup_page():
     st.title("📝 Sign Up for MarketMind")
-    # Optional: Add a static logo
-    st.image("logo.png", width=150)  # Replace with your logo file
+    # Remote logo to avoid file errors
+    st.image("https://upload.wikimedia.org/wikipedia/commons/8/87/Logo_sample.png", width=150)
 
     username = st.text_input("Choose a username", key="signup_user")
     password = st.text_input("Choose a password", type="password", key="signup_pass")
@@ -70,8 +70,8 @@ def signup_page():
 # --- Login Page ---
 def login_page():
     st.title("📈 MarketMind Login")
-    # Optional: Add a static logo
-    st.image("logo.png", width=150)
+    # Use same remote logo
+    st.image("https://upload.wikimedia.org/wikipedia/commons/8/87/Logo_sample.png", width=150)
 
     username = st.text_input("Username", key="login_user")
     password = st.text_input("Password", type="password", key="login_pass")
@@ -99,7 +99,6 @@ def dashboard_page():
     st.title("📊 MarketMind Dashboard")
     st.write("Analyze market trends and get product recommendations")
 
-    # Input for product
     product_input = st.text_input("Enter product name:", key="product_input")
     if st.button("Analyze", key="analyze_btn") and product_input:
         product = product_input.strip().lower()
@@ -107,7 +106,7 @@ def dashboard_page():
         trend, score = calculate_trend(trend_history)
         prediction, recommendation = predict_sales(score)
 
-        # Display results
+        # Display Results
         st.subheader(f"Product: {product.title()}")
         st.write(f"**Trend:** {trend}")
         st.write(f"**Score:** {score}")
@@ -117,7 +116,7 @@ def dashboard_page():
             unsafe_allow_html=True
         )
 
-        # --- Date-wise trend graph ---
+        # Date-wise Trend Graph
         dates = pd.date_range(end=pd.Timestamp.today(), periods=4)
         df = pd.DataFrame({
             "Date": dates,
@@ -126,7 +125,7 @@ def dashboard_page():
         df = df.set_index("Date")
         st.line_chart(df)
 
-# --- Main ---
+# --- Main App Flow ---
 if st.session_state.page == "signup":
     signup_page()
 elif st.session_state.page == "login":
@@ -137,4 +136,3 @@ elif st.session_state.page == "dashboard":
     else:
         st.warning("Please log in first!")
         st.session_state.page = "login"
-
