@@ -2,29 +2,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import random
-from sklearn.linear_model import LinearRegression
 
-st.set_page_config(page_title="MarketMind Pro AI", layout="wide")
+st.set_page_config(page_title="MarketMind AI", layout="wide")
 
-# --------- UI Styling ---------
-st.markdown("""
-<style>
-.main-title{
-font-size:40px;
-font-weight:bold;
-color:#4CAF50;
-}
-
-.metric-card{
-background-color:#111;
-padding:15px;
-border-radius:10px;
-text-align:center;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# --------- Product Database ---------
+# ---------- Product Database ----------
 PRODUCTS_DB = {
     "smartphone":[70,75,80,85],
     "laptop":[60,65,63,68],
@@ -36,100 +17,94 @@ PRODUCTS_DB = {
     "gaming console":[75,78,82,90]
 }
 
-# --------- AI Prediction ---------
+# ---------- Simple AI Prediction ----------
 def predict_future(history, days=3):
 
-    X=np.array(range(len(history))).reshape(-1,1)
-    y=np.array(history)
+    x = np.arange(len(history))
+    y = np.array(history)
 
-    model=LinearRegression()
-    model.fit(X,y)
+    slope, intercept = np.polyfit(x, y, 1)
 
-    future=[]
+    predictions = []
 
-    for i in range(days):
-        next_day=np.array([[len(history)+i]])
-        pred=model.predict(next_day)[0]
-        future.append(round(pred,2))
+    for i in range(1, days+1):
+        next_value = slope*(len(history)+i-1) + intercept
+        predictions.append(round(next_value,2))
 
-    return future
+    return predictions
 
-# --------- Demand Score ---------
+# ---------- Demand Score ----------
 def demand_score(score):
 
-    if score>80:
+    if score > 80:
         return "Very High 🔥"
-    elif score>65:
+    elif score > 65:
         return "High 📈"
-    elif score>50:
+    elif score > 50:
         return "Medium ➖"
     else:
         return "Low 📉"
 
-# --------- Sidebar ---------
-st.sidebar.title("MarketMind AI")
+# ---------- Sidebar ----------
+st.sidebar.title("📊 MarketMind AI")
 
-menu=st.sidebar.radio(
-"Navigation",
-["Dashboard","Product Analysis","Product Comparison","Top Trends"]
+menu = st.sidebar.radio(
+    "Navigation",
+    ["Dashboard","Product Analysis","Product Comparison","Top Trends"]
 )
 
-# --------- Dashboard ---------
-if menu=="Dashboard":
+# ---------- Dashboard ----------
+if menu == "Dashboard":
 
-    st.markdown("<div class='main-title'>📊 MarketMind AI Dashboard</div>",unsafe_allow_html=True)
+    st.title("📊 MarketMind AI Dashboard")
 
-    st.write("AI-powered market trend analytics")
+    total_products = len(PRODUCTS_DB)
 
-    # metrics
-    col1,col2,col3=st.columns(3)
+    avg_score = int(np.mean([v[-1] for v in PRODUCTS_DB.values()]))
 
-    total_products=len(PRODUCTS_DB)
+    top_product = max(PRODUCTS_DB, key=lambda x: PRODUCTS_DB[x][-1])
 
-    avg_score=int(np.mean([v[-1] for v in PRODUCTS_DB.values()]))
+    col1,col2,col3 = st.columns(3)
 
-    top_product=max(PRODUCTS_DB,key=lambda x:PRODUCTS_DB[x][-1])
+    col1.metric("Products Tracked", total_products)
+    col2.metric("Average Trend Score", avg_score)
+    col3.metric("Top Product", top_product.title())
 
-    col1.metric("Products Tracked",total_products)
-    col2.metric("Average Trend Score",avg_score)
-    col3.metric("Top Product",top_product.title())
-
-# --------- Product Analysis ---------
-elif menu=="Product Analysis":
+# ---------- Product Analysis ----------
+elif menu == "Product Analysis":
 
     st.header("🔍 Product Trend Analysis")
 
-    product=st.selectbox("Select Product",list(PRODUCTS_DB.keys()))
+    product = st.selectbox("Select Product", list(PRODUCTS_DB.keys()))
 
-    history=PRODUCTS_DB[product]
+    history = PRODUCTS_DB[product]
 
-    score=history[-1]
+    score = history[-1]
 
-    future=predict_future(history)
+    future = predict_future(history)
 
-    demand=demand_score(score)
+    demand = demand_score(score)
 
-    col1,col2,col3=st.columns(3)
+    col1,col2,col3 = st.columns(3)
 
-    col1.metric("Current Score",score)
-    col2.metric("AI Next Day Prediction",future[0])
-    col3.metric("Demand Level",demand)
+    col1.metric("Current Score", score)
+    col2.metric("Next Day Prediction", future[0])
+    col3.metric("Demand Level", demand)
 
-    st.subheader("Trend Chart")
+    st.subheader("Trend History")
 
-    dates=pd.date_range(end=pd.Timestamp.today(),periods=len(history))
+    dates = pd.date_range(end=pd.Timestamp.today(), periods=len(history))
 
-    df=pd.DataFrame({
+    df = pd.DataFrame({
         "Date":dates,
         "Trend":history
     }).set_index("Date")
 
     st.line_chart(df)
 
-    # Forecast chart
     st.subheader("AI Forecast")
 
-    forecast_df=pd.DataFrame({
+    forecast_df = pd.DataFrame({
         "Day":[1,2,3],
         "Predicted Score":future
     })
@@ -138,7 +113,7 @@ elif menu=="Product Analysis":
 
     st.dataframe(df)
 
-    csv=df.to_csv().encode()
+    csv = df.to_csv().encode()
 
     st.download_button(
         "Download Report",
@@ -147,29 +122,30 @@ elif menu=="Product Analysis":
         "text/csv"
     )
 
-# --------- Product Comparison ---------
-elif menu=="Product Comparison":
+# ---------- Product Comparison ----------
+elif menu == "Product Comparison":
 
     st.header("⚔️ Compare Products")
 
-    p1=st.selectbox("Product 1",list(PRODUCTS_DB.keys()))
-    p2=st.selectbox("Product 2",list(PRODUCTS_DB.keys()),index=1)
+    p1 = st.selectbox("Product 1", list(PRODUCTS_DB.keys()))
+    p2 = st.selectbox("Product 2", list(PRODUCTS_DB.keys()), index=1)
 
-    df=pd.DataFrame({
+    df = pd.DataFrame({
         p1:PRODUCTS_DB[p1],
         p2:PRODUCTS_DB[p2]
     })
 
     st.line_chart(df)
 
-# --------- Top Trends ---------
-elif menu=="Top Trends":
+# ---------- Top Trends ----------
+elif menu == "Top Trends":
 
     st.header("🔥 Top Trending Products")
 
-    ranking=sorted(PRODUCTS_DB.items(),key=lambda x:x[1][-1],reverse=True)
+    ranking = sorted(PRODUCTS_DB.items(), key=lambda x:x[1][-1], reverse=True)
 
     for i,(p,data) in enumerate(ranking):
 
         st.write(f"{i+1}. **{p.title()}** — Score: {data[-1]}")
+
 
