@@ -1,21 +1,19 @@
-# backend/app.py
-# marketmind_app.py
 import streamlit as st
 import random
 import pandas as pd
 
+# --- Page Config ---
 st.set_page_config(page_title="MarketMind", layout="wide")
 
-# --- In-memory user database (for demo) ---
+# --- Session state initialization ---
 if "users" not in st.session_state:
     st.session_state.users = {"admin": "12345"}  # default user
-
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
 if "page" not in st.session_state:
-    st.session_state.page = "signup"  # start with signup page
+    st.session_state.page = "signup"  # start with signup
 
 # --- Product database ---
 PRODUCTS_DB = {
@@ -26,7 +24,7 @@ PRODUCTS_DB = {
     "shoes": [40, 45, 50, 55],
 }
 
-# --- Helper functions ---
+# --- Utility Functions ---
 def calculate_trend(trend_history):
     last = trend_history[-1]
     prev = trend_history[-2]
@@ -60,6 +58,7 @@ def signup_page():
             st.session_state.users[username] = password
             st.success("Sign-up successful! Please log in.")
             st.session_state.page = "login"
+            st.experimental_rerun()  # <-- fixed: redirect to login immediately
 
 # --- Login Page ---
 def login_page():
@@ -72,6 +71,7 @@ def login_page():
             st.session_state.username = username
             st.session_state.page = "dashboard"
             st.success(f"Welcome {username}!")
+            st.experimental_rerun()  # optional: rerun to refresh page
         else:
             st.error("Invalid credentials.")
 
@@ -94,12 +94,17 @@ def dashboard_page():
         trend, score = calculate_trend(trend_history)
         prediction, recommendation = predict_sales(score)
 
+        # Display results
         st.subheader(f"Product: {product.title()}")
         st.write(f"**Trend:** {trend}")
         st.write(f"**Score:** {score}")
         st.write(f"**Prediction:** {prediction}")
-        st.markdown(f"**Recommendation:** <span style='color: {'green' if recommendation=='Invest' else 'orange' if recommendation=='Hold' else 'red'}'>{recommendation}</span>", unsafe_allow_html=True)
+        st.markdown(
+            f"**Recommendation:** <span style='color: {'green' if recommendation=='Invest' else 'orange' if recommendation=='Hold' else 'red'}'>{recommendation}</span>",
+            unsafe_allow_html=True
+        )
 
+        # Trend Chart
         df = pd.DataFrame({
             "Week": ["Week 1", "Week 2", "Week 3", "Week 4"],
             "Trend Score": trend_history
@@ -117,3 +122,5 @@ elif st.session_state.page == "dashboard":
     else:
         st.warning("Please log in first!")
         st.session_state.page = "login"
+        st.experimental_rerun()
+
