@@ -1,3 +1,4 @@
+
 import streamlit as st
 import random
 import pandas as pd
@@ -58,6 +59,30 @@ def predict_sales(score):
         return "Sales might slightly increase ⬆️", "Hold"
     else:
         return "Sales might decrease 📉", "Avoid"
+
+def trend_overview(trend_history, product_name):
+    """
+    Generate a short description based on trend history.
+    """
+    if len(trend_history) < 2:
+        return "Not enough data to determine trend."
+
+    last = trend_history[-1]
+    prev = trend_history[-2]
+    avg = sum(trend_history) / len(trend_history)
+
+    description = f"The latest trend score for **{product_name.title()}** is {last}. "
+
+    if last > prev and last > avg:
+        description += "The product is showing a strong upward trend 📈. It may be a good investment opportunity."
+    elif last > prev and last <= avg:
+        description += "The product is trending upward slightly ⬆️. Monitor its performance for potential growth."
+    elif last == prev:
+        description += "The product trend is stable ➖. Demand is consistent."
+    else:
+        description += "The product is showing a downward trend 📉. Consider caution before investing."
+
+    return description
 
 # --- Sign-Up Page ---
 def signup_page():
@@ -134,7 +159,7 @@ def dashboard_page():
             unsafe_allow_html=True
         )
 
-        # Date-wise trend graph
+        # Date-wise Trend Graph
         dates = pd.date_range(end=pd.Timestamp.today(), periods=4)
         df = pd.DataFrame({
             "Date": dates,
@@ -142,6 +167,11 @@ def dashboard_page():
         })
         df = df.set_index("Date")
         st.line_chart(df)
+
+        # --- Product Overview ---
+        overview_text = trend_overview(trend_history, product)
+        st.markdown("### Product Overview")
+        st.write(overview_text)
 
 # --- Main App Flow ---
 if st.session_state.page == "signup":
