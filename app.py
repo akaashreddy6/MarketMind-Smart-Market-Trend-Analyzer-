@@ -2,11 +2,12 @@ import streamlit as st
 import random
 import pandas as pd
 
+# --- Page Config ---
 st.set_page_config(page_title="MarketMind", layout="wide")
 
-# --- Session state initialization ---
+# --- Initialize session state ---
 if "users" not in st.session_state:
-    st.session_state.users = {"admin": "12345"}
+    st.session_state.users = {"admin": "12345"}  # default user
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -56,14 +57,12 @@ def signup_page():
             st.error("Username already exists!")
         else:
             st.session_state.users[username] = password
-            st.success("Sign-up successful! Please log in.")
             st.session_state.page = "login"
-            st.experimental_rerun()
-    
+            st.success("Sign-up successful! Please log in.")
+
     st.write("Already have an account?")
     if st.button("Go to Login", key="goto_login_btn"):
         st.session_state.page = "login"
-        st.experimental_rerun()
 
 # --- Login Page ---
 def login_page():
@@ -76,15 +75,12 @@ def login_page():
             st.session_state.logged_in = True
             st.session_state.username = username
             st.session_state.page = "dashboard"
-            st.success(f"Welcome {username}!")
-            st.experimental_rerun()
         else:
             st.error("Invalid credentials.")
     
     st.write("New user?")
     if st.button("Go to Sign Up", key="goto_signup_btn"):
         st.session_state.page = "signup"
-        st.experimental_rerun()
 
 # --- Dashboard Page ---
 def dashboard_page():
@@ -93,7 +89,6 @@ def dashboard_page():
         st.session_state.logged_in = False
         st.session_state.username = ""
         st.session_state.page = "login"
-        st.experimental_rerun()
 
     st.title("📊 MarketMind Dashboard")
     st.write("Analyze market trends and get product recommendations")
@@ -120,7 +115,7 @@ def dashboard_page():
         })
         st.line_chart(df.set_index("Week"))
 
-# --- Main ---
+# --- Main Logic ---
 if st.session_state.page == "signup":
     signup_page()
 elif st.session_state.page == "login":
@@ -131,5 +126,5 @@ elif st.session_state.page == "dashboard":
     else:
         st.warning("Please log in first!")
         st.session_state.page = "login"
-        st.experimental_rerun()
+
 
