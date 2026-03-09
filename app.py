@@ -1,13 +1,28 @@
 import streamlit as st
 import random
 import pandas as pd
+import json
+import os
 
 # --- Page Config ---
 st.set_page_config(page_title="MarketMind", layout="wide")
 
-# --- Session State Initialization ---
+# --- Users File for Persistent Storage ---
+USERS_FILE = "users.json"
+
+def load_users():
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, "r") as f:
+            return json.load(f)
+    return {"admin": "12345"}
+
+def save_users(users_dict):
+    with open(USERS_FILE, "w") as f:
+        json.dump(users_dict, f)
+
+# --- Initialize session state ---
 if "users" not in st.session_state:
-    st.session_state.users = {"admin": "12345"}  # default user
+    st.session_state.users = load_users()
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -47,7 +62,6 @@ def predict_sales(score):
 # --- Sign-Up Page ---
 def signup_page():
     st.title("📝 Sign Up for MarketMind")
-    # Remote logo to avoid file errors
     st.image("https://upload.wikimedia.org/wikipedia/commons/8/87/Logo_sample.png", width=150)
 
     username = st.text_input("Choose a username", key="signup_user")
@@ -59,9 +73,14 @@ def signup_page():
         elif username in st.session_state.users:
             st.error("Username already exists!")
         else:
+            # Save new user persistently
             st.session_state.users[username] = password
-            st.session_state.page = "login"
-            st.success("Sign-up successful! Please log in.")
+            save_users(st.session_state.users)
+            # Automatically log in the new user
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.session_state.page = "dashboard"
+            st.success(f"Sign-up successful! Welcome, {username}!")
 
     st.write("Already have an account?")
     if st.button("Go to Login", key="goto_login_btn"):
@@ -70,7 +89,6 @@ def signup_page():
 # --- Login Page ---
 def login_page():
     st.title("📈 MarketMind Login")
-    # Use same remote logo
     st.image("https://upload.wikimedia.org/wikipedia/commons/8/87/Logo_sample.png", width=150)
 
     username = st.text_input("Username", key="login_user")
@@ -106,7 +124,7 @@ def dashboard_page():
         trend, score = calculate_trend(trend_history)
         prediction, recommendation = predict_sales(score)
 
-        # Display Results
+        # Display results
         st.subheader(f"Product: {product.title()}")
         st.write(f"**Trend:** {trend}")
         st.write(f"**Score:** {score}")
@@ -116,7 +134,7 @@ def dashboard_page():
             unsafe_allow_html=True
         )
 
-        # Date-wise Trend Graph
+        # Date-wise trend graph
         dates = pd.date_range(end=pd.Timestamp.today(), periods=4)
         df = pd.DataFrame({
             "Date": dates,
