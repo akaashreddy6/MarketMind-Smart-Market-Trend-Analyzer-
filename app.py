@@ -7,11 +7,12 @@ import os
 from sklearn.linear_model import LinearRegression
 import plotly.express as px
 
-st.set_page_config(page_title="MarketMind AI Pro", layout="wide")
+st.set_page_config(page_title="MarketMind AI Ultra", layout="wide")
 
-# -----------------------------
+# -------------------------
 # USER DATABASE
-# -----------------------------
+# -------------------------
+
 USER_FILE = "users.csv"
 
 if not os.path.exists(USER_FILE):
@@ -21,6 +22,7 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def signup(username,password):
+
     df = pd.read_csv(USER_FILE)
 
     if username in df["username"].values:
@@ -33,69 +35,83 @@ def signup(username,password):
 
     df = pd.concat([df,new],ignore_index=True)
     df.to_csv(USER_FILE,index=False)
+
     return True
 
 def login(username,password):
+
     df = pd.read_csv(USER_FILE)
 
     user = df[df["username"]==username]
 
     if not user.empty:
+
         if user.iloc[0]["password"] == hash_password(password):
             return True
+
     return False
 
-# -----------------------------
-# SESSION LOGIN
-# -----------------------------
+
+# -------------------------
+# SESSION MANAGEMENT
+# -------------------------
+
 if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+    st.session_state.logged_in=False
 
 if not st.session_state.logged_in:
 
-    st.title("🔐 MarketMind AI Login")
+    st.title("🔐 MarketMind AI")
 
     tab1,tab2 = st.tabs(["Login","Signup"])
 
     with tab1:
 
-        user = st.text_input("Username")
-        pw = st.text_input("Password",type="password")
+        u = st.text_input("Username")
+        p = st.text_input("Password",type="password")
 
         if st.button("Login"):
 
-            if login(user,pw):
+            if login(u,p):
+
                 st.session_state.logged_in=True
-                st.success("Login Successful")
+                st.success("Login successful")
                 st.rerun()
+
             else:
                 st.error("Invalid credentials")
 
     with tab2:
 
-        new_user = st.text_input("Create Username")
-        new_pw = st.text_input("Create Password",type="password")
+        u = st.text_input("Create Username")
+        p = st.text_input("Create Password",type="password")
 
         if st.button("Signup"):
 
-            if signup(new_user,new_pw):
+            if signup(u,p):
                 st.success("Account created")
             else:
                 st.error("Username already exists")
 
     st.stop()
 
-# -----------------------------
+# -------------------------
 # LOGOUT
-# -----------------------------
-st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"logged_in":False}))
+# -------------------------
 
-# -----------------------------
+st.sidebar.button(
+    "Logout",
+    on_click=lambda: st.session_state.update({"logged_in":False})
+)
+
+# -------------------------
 # PRODUCT DATABASE
-# -----------------------------
+# -------------------------
+
 if "products_db" not in st.session_state:
 
-    st.session_state.products_db = {
+    st.session_state.products_db={
+
         "smartphone":[70,75,80,85],
         "laptop":[60,65,63,68],
         "headphones":[50,55,60,70],
@@ -104,63 +120,113 @@ if "products_db" not in st.session_state:
         "smartwatch":[55,60,64,69],
         "camera":[50,52,55,60],
         "gaming console":[75,78,82,90]
+
     }
 
 PRODUCTS_DB = st.session_state.products_db
 
-# -----------------------------
-# AI PREDICTION MODEL
-# -----------------------------
-def predict_ml(history,days=3):
+# -------------------------
+# MACHINE LEARNING MODEL
+# -------------------------
 
-    X = np.array(range(len(history))).reshape(-1,1)
-    y = np.array(history)
+def ml_predict(history,days=5):
 
-    model = LinearRegression()
+    X=np.array(range(len(history))).reshape(-1,1)
+    y=np.array(history)
+
+    model=LinearRegression()
     model.fit(X,y)
 
-    future=[]
+    preds=[]
 
     for i in range(days):
-        pred = model.predict([[len(history)+i]])
-        future.append(round(float(pred),2))
 
-    return future
+        val=model.predict([[len(history)+i]])
+        preds.append(round(float(val),2))
 
-# -----------------------------
-# DEMAND LEVEL
-# -----------------------------
-def demand(score):
+    return preds
 
-    if score > 80:
+# -------------------------
+# DEMAND CLASSIFICATION
+# -------------------------
+
+def demand_level(score):
+
+    if score>80:
         return "Very High 🔥"
-    elif score > 65:
+
+    elif score>65:
         return "High 📈"
-    elif score > 50:
+
+    elif score>50:
         return "Medium"
+
     else:
         return "Low 📉"
 
-# -----------------------------
-# INVESTMENT ADVICE
-# -----------------------------
-def investment(score):
 
-    if score > 80:
+# -------------------------
+# INVESTMENT ADVICE
+# -------------------------
+
+def investment_advice(score):
+
+    if score>80:
         return "Invest 📈"
-    elif score > 60:
+
+    elif score>60:
         return "Hold ⏳"
+
     else:
         return "Avoid ⚠️"
 
-# -----------------------------
-# SIDEBAR
-# -----------------------------
-st.sidebar.title("📊 MarketMind AI")
 
-menu = st.sidebar.radio(
+# -------------------------
+# AI INSIGHT ENGINE
+# -------------------------
+
+def ai_insight(history):
+
+    growth=history[-1]-history[-2]
+
+    volatility=np.std(history)
+
+    if growth>5:
+        trend="Rapid Growth"
+
+    elif growth>0:
+        trend="Stable Growth"
+
+    else:
+        trend="Declining"
+
+    if volatility<5:
+        stability="Stable Market"
+
+    else:
+        stability="High Volatility"
+
+    return trend,stability,growth
+
+
+# -------------------------
+# SIDEBAR
+# -------------------------
+
+st.sidebar.title("📊 MarketMind AI Ultra")
+
+menu=st.sidebar.radio(
+
     "Navigation",
-    ["Dashboard","Product Analysis","Comparison","Top Trends"]
+
+    [
+        "Dashboard",
+        "Product Analysis",
+        "Comparison",
+        "Top Trends",
+        "Market Scanner"
+    ]
+
 )
 
 st.sidebar.write("### Products")
@@ -168,12 +234,13 @@ st.sidebar.write("### Products")
 for p in PRODUCTS_DB:
     st.sidebar.write("•",p.title())
 
-# -----------------------------
+# -------------------------
 # DASHBOARD
-# -----------------------------
+# -------------------------
+
 if menu=="Dashboard":
 
-    st.title("📊 MarketMind AI Pro Dashboard")
+    st.title("📊 AI Market Dashboard")
 
     total=len(PRODUCTS_DB)
 
@@ -184,50 +251,56 @@ if menu=="Dashboard":
     growth={p:v[-1]-v[-2] for p,v in PRODUCTS_DB.items()}
     fastest=max(growth,key=growth.get)
 
-    col1,col2,col3,col4 = st.columns(4)
+    volatility={p:np.std(v) for p,v in PRODUCTS_DB.items()}
+    most_stable=min(volatility,key=volatility.get)
 
-    col1.metric("Products",total)
-    col2.metric("Average Score",avg)
-    col3.metric("Top Product",top.title())
-    col4.metric("Fastest Growth",fastest.title())
+    c1,c2,c3,c4,c5=st.columns(5)
 
-# -----------------------------
+    c1.metric("Products",total)
+    c2.metric("Average Score",avg)
+    c3.metric("Top Product",top.title())
+    c4.metric("Fastest Growth",fastest.title())
+    c5.metric("Most Stable",most_stable.title())
+
+# -------------------------
 # PRODUCT ANALYSIS
-# -----------------------------
+# -------------------------
+
 elif menu=="Product Analysis":
 
-    st.header("🔎 Product AI Analysis")
+    st.header("🔎 AI Product Analysis")
 
-    product = st.text_input("Enter product name")
+    product=st.text_input("Enter product")
 
     if st.button("Analyze") and product:
 
-        product = product.strip().lower()
+        product=product.strip().lower()
 
-        history = PRODUCTS_DB.get(product)
+        history=PRODUCTS_DB.get(product)
 
         if history is None:
 
             base=random.randint(30,60)
-            history=[base+i*random.randint(2,7) for i in range(4)]
+
+            history=[base+i*random.randint(2,7) for i in range(6)]
 
             PRODUCTS_DB[product]=history
 
         score=history[-1]
 
-        future=predict_ml(history)
+        preds=ml_predict(history)
 
-        growth = history[-1]-history[-2]
+        trend,stability,growth=ai_insight(history)
 
-        col1,col2,col3,col4,col5 = st.columns(5)
+        c1,c2,c3,c4,c5=st.columns(5)
 
-        col1.metric("Score",score)
-        col2.metric("Prediction",future[0])
-        col3.metric("Growth",growth)
-        col4.metric("Demand",demand(score))
-        col5.metric("Advice",investment(score))
+        c1.metric("Score",score)
+        c2.metric("Prediction",preds[0])
+        c3.metric("Growth",growth)
+        c4.metric("Demand",demand_level(score))
+        c5.metric("Advice",investment_advice(score))
 
-        # Chart
+        # Trend chart
         dates=pd.date_range(end=pd.Timestamp.today(),periods=len(history))
 
         df=pd.DataFrame({
@@ -235,29 +308,25 @@ elif menu=="Product Analysis":
             "Trend":history
         })
 
-        fig=px.line(df,x="Date",y="Trend",title="Market Trend")
+        fig=px.line(df,x="Date",y="Trend",title="Trend History")
+
         st.plotly_chart(fig,use_container_width=True)
 
-        # Forecast
+        # Forecast chart
         fdf=pd.DataFrame({
-            "Day":[1,2,3],
-            "Prediction":future
+            "Day":list(range(1,6)),
+            "Prediction":preds
         })
 
         fig2=px.bar(fdf,x="Day",y="Prediction",title="AI Forecast")
+
         st.plotly_chart(fig2,use_container_width=True)
 
-        # Insight
-        st.subheader("🧠 AI Market Insight")
+        st.subheader("🧠 AI Insights")
 
-        if growth > 5:
-            st.success("Product demand is rapidly growing.")
-        elif growth > 0:
-            st.info("Stable market growth.")
-        else:
-            st.warning("Demand is decreasing.")
+        st.write("Trend:",trend)
+        st.write("Market Stability:",stability)
 
-        # Download
         csv=df.to_csv(index=False).encode()
 
         st.download_button(
@@ -267,9 +336,10 @@ elif menu=="Product Analysis":
             "text/csv"
         )
 
-# -----------------------------
+# -------------------------
 # COMPARISON
-# -----------------------------
+# -------------------------
+
 elif menu=="Comparison":
 
     st.header("⚔️ Product Comparison")
@@ -287,14 +357,16 @@ elif menu=="Comparison":
         })
 
         fig=px.line(df,title="Trend Comparison")
+
         st.plotly_chart(fig,use_container_width=True)
 
-# -----------------------------
+# -------------------------
 # TOP TRENDS
-# -----------------------------
+# -------------------------
+
 elif menu=="Top Trends":
 
-    st.header("🔥 Top Trending Products")
+    st.header("🔥 Top Products")
 
     ranking=sorted(
         PRODUCTS_DB.items(),
@@ -307,15 +379,48 @@ elif menu=="Top Trends":
     for p,v in ranking:
 
         data.append({
+
             "Product":p.title(),
             "Score":v[-1],
-            "Demand":demand(v[-1]),
-            "Advice":investment(v[-1])
+            "Demand":demand_level(v[-1]),
+            "Advice":investment_advice(v[-1])
+
         })
 
     rdf=pd.DataFrame(data)
 
     st.dataframe(rdf)
+
+# -------------------------
+# MARKET SCANNER
+# -------------------------
+
+elif menu=="Market Scanner":
+
+    st.header("🛰️ Market Scanner")
+
+    scan=[]
+
+    for p,v in PRODUCTS_DB.items():
+
+        growth=v[-1]-v[-2]
+
+        if growth>5:
+
+            scan.append({
+                "Product":p.title(),
+                "Growth":growth,
+                "Signal":"🚀 Trending"
+            })
+
+    if scan:
+
+        sdf=pd.DataFrame(scan)
+        st.dataframe(sdf)
+
+    else:
+        st.info("No strong trends detected")
+
 
 
 
