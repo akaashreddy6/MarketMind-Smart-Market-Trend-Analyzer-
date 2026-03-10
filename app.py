@@ -4,95 +4,98 @@ import numpy as np
 import random
 import hashlib
 import os
-from sklearn.linear_model import LinearRegression
-import plotly.express as px
 
-st.set_page_config(page_title="MarketMind AI Pro", layout="wide")
+st.set_page_config(page_title="MarketMind AI", layout="wide")
 
-# -----------------------------
-# USER DATABASE
-# -----------------------------
+# ---------- User File ----------
 USER_FILE = "users.csv"
 
 if not os.path.exists(USER_FILE):
-    pd.DataFrame(columns=["username","password"]).to_csv(USER_FILE,index=False)
+    df = pd.DataFrame(columns=["username","password"])
+    df.to_csv(USER_FILE,index=False)
 
+# ---------- Password Hash ----------
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+# ---------- Signup ----------
 def signup(username,password):
     df = pd.read_csv(USER_FILE)
 
     if username in df["username"].values:
         return False
 
-    new = pd.DataFrame({
+    new_user = pd.DataFrame({
         "username":[username],
         "password":[hash_password(password)]
     })
 
-    df = pd.concat([df,new],ignore_index=True)
+    df = pd.concat([df,new_user],ignore_index=True)
     df.to_csv(USER_FILE,index=False)
+
     return True
 
+# ---------- Login ----------
 def login(username,password):
+
     df = pd.read_csv(USER_FILE)
 
     user = df[df["username"]==username]
 
     if not user.empty:
+
         if user.iloc[0]["password"] == hash_password(password):
             return True
+
     return False
 
-# -----------------------------
-# SESSION LOGIN
-# -----------------------------
+# ---------- Session ----------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+# ---------- Login / Signup UI ----------
 if not st.session_state.logged_in:
 
     st.title("🔐 MarketMind AI Login")
 
     tab1,tab2 = st.tabs(["Login","Signup"])
 
+    # LOGIN
     with tab1:
 
-        user = st.text_input("Username")
-        pw = st.text_input("Password",type="password")
+        username = st.text_input("Username")
+        password = st.text_input("Password",type="password")
 
         if st.button("Login"):
 
-            if login(user,pw):
-                st.session_state.logged_in=True
+            if login(username,password):
+
+                st.session_state.logged_in = True
                 st.success("Login Successful")
                 st.rerun()
+
             else:
                 st.error("Invalid credentials")
 
+    # SIGNUP
     with tab2:
 
         new_user = st.text_input("Create Username")
-        new_pw = st.text_input("Create Password",type="password")
+        new_pass = st.text_input("Create Password",type="password")
 
         if st.button("Signup"):
 
-            if signup(new_user,new_pw):
-                st.success("Account created")
+            if signup(new_user,new_pass):
+                st.success("Account Created. Please Login.")
             else:
                 st.error("Username already exists")
 
     st.stop()
 
-# -----------------------------
-# LOGOUT
-# -----------------------------
+# ---------- Logout ----------
 st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"logged_in":False}))
 
-# -----------------------------
-# PRODUCT DATABASE
-# -----------------------------
+# ---------- Product Database ----------
 if "products_db" not in st.session_state:
 
     st.session_state.products_db = {
@@ -108,43 +111,34 @@ if "products_db" not in st.session_state:
 
 PRODUCTS_DB = st.session_state.products_db
 
-# -----------------------------
-# AI PREDICTION MODEL
-# -----------------------------
-def predict_ml(history,days=3):
+# ---------- Prediction ----------
+def predict_future(history,days=3):
 
-    X = np.array(range(len(history))).reshape(-1,1)
-    y = np.array(history)
+    avg_growth = np.mean(np.diff(history))
+    last_value = history[-1]
 
-    model = LinearRegression()
-    model.fit(X,y)
-
-    future=[]
+    predictions = []
 
     for i in range(days):
-        pred = model.predict([[len(history)+i]])
-        future.append(round(float(pred),2))
+        last_value += avg_growth
+        predictions.append(round(last_value,2))
 
-    return future
+    return predictions
 
-# -----------------------------
-# DEMAND LEVEL
-# -----------------------------
-def demand(score):
+# ---------- Demand ----------
+def demand_score(score):
 
     if score > 80:
         return "Very High 🔥"
     elif score > 65:
         return "High 📈"
     elif score > 50:
-        return "Medium"
+        return "Medium ➖"
     else:
         return "Low 📉"
 
-# -----------------------------
-# INVESTMENT ADVICE
-# -----------------------------
-def investment(score):
+# ---------- Investment Advice ----------
+def investment_advice(score):
 
     if score > 80:
         return "Invest 📈"
@@ -153,54 +147,48 @@ def investment(score):
     else:
         return "Avoid ⚠️"
 
-# -----------------------------
-# SIDEBAR
-# -----------------------------
+# ---------- Sidebar ----------
 st.sidebar.title("📊 MarketMind AI")
 
 menu = st.sidebar.radio(
     "Navigation",
-    ["Dashboard","Product Analysis","Comparison","Top Trends"]
+    ["Dashboard","Product Analysis","Product Comparison","Top Trends"]
 )
 
-st.sidebar.write("### Products")
+st.sidebar.write("### Tracked Products")
 
 for p in PRODUCTS_DB:
     st.sidebar.write("•",p.title())
 
-# -----------------------------
-# DASHBOARD
-# -----------------------------
-if menu=="Dashboard":
+# ---------- Dashboard ----------
+if menu == "Dashboard":
 
-    st.title("📊 MarketMind AI Pro Dashboard")
+    st.title("📊 MarketMind AI Dashboard")
 
-    total=len(PRODUCTS_DB)
+    total_products = len(PRODUCTS_DB)
 
-    avg=int(np.mean([v[-1] for v in PRODUCTS_DB.values()]))
+    avg_score = int(np.mean([v[-1] for v in PRODUCTS_DB.values()]))
 
-    top=max(PRODUCTS_DB,key=lambda x:PRODUCTS_DB[x][-1])
+    top_product = max(PRODUCTS_DB, key=lambda x: PRODUCTS_DB[x][-1])
 
-    growth={p:v[-1]-v[-2] for p,v in PRODUCTS_DB.items()}
-    fastest=max(growth,key=growth.get)
+    growth_scores = {p:v[-1]-v[-2] for p,v in PRODUCTS_DB.items()}
+    fastest = max(growth_scores,key=growth_scores.get)
 
     col1,col2,col3,col4 = st.columns(4)
 
-    col1.metric("Products",total)
-    col2.metric("Average Score",avg)
-    col3.metric("Top Product",top.title())
+    col1.metric("Products Tracked",total_products)
+    col2.metric("Average Trend Score",avg_score)
+    col3.metric("Top Product",top_product.title())
     col4.metric("Fastest Growth",fastest.title())
 
-# -----------------------------
-# PRODUCT ANALYSIS
-# -----------------------------
-elif menu=="Product Analysis":
+# ---------- Product Analysis ----------
+elif menu == "Product Analysis":
 
-    st.header("🔎 Product AI Analysis")
+    st.header("🔍 Product Trend Analysis")
 
     product = st.text_input("Enter product name")
 
-    if st.button("Analyze") and product:
+    if st.button("Analyze Product") and product:
 
         product = product.strip().lower()
 
@@ -208,57 +196,51 @@ elif menu=="Product Analysis":
 
         if history is None:
 
-            base=random.randint(30,60)
-            history=[base+i*random.randint(2,7) for i in range(4)]
+            base = random.randint(30,60)
+            history = [base + i*random.randint(2,6) for i in range(4)]
+            PRODUCTS_DB[product] = history
 
-            PRODUCTS_DB[product]=history
+        score = history[-1]
 
-        score=history[-1]
+        future = predict_future(history)
 
-        future=predict_ml(history)
+        demand = demand_score(score)
 
-        growth = history[-1]-history[-2]
+        advice = investment_advice(score)
+
+        growth = history[-1] - history[-2]
 
         col1,col2,col3,col4,col5 = st.columns(5)
 
-        col1.metric("Score",score)
-        col2.metric("Prediction",future[0])
+        col1.metric("Current Score",score)
+        col2.metric("Next Prediction",future[0])
         col3.metric("Growth",growth)
-        col4.metric("Demand",demand(score))
-        col5.metric("Advice",investment(score))
+        col4.metric("Demand Level",demand)
+        col5.metric("Investment",advice)
 
-        # Chart
-        dates=pd.date_range(end=pd.Timestamp.today(),periods=len(history))
+        st.subheader("Trend History")
 
-        df=pd.DataFrame({
+        dates = pd.date_range(end=pd.Timestamp.today(), periods=len(history))
+
+        df = pd.DataFrame({
             "Date":dates,
             "Trend":history
-        })
+        }).set_index("Date")
 
-        fig=px.line(df,x="Date",y="Trend",title="Market Trend")
-        st.plotly_chart(fig,use_container_width=True)
+        st.line_chart(df)
 
-        # Forecast
-        fdf=pd.DataFrame({
+        st.subheader("AI Forecast")
+
+        forecast_df = pd.DataFrame({
             "Day":[1,2,3],
-            "Prediction":future
+            "Predicted Score":future
         })
 
-        fig2=px.bar(fdf,x="Day",y="Prediction",title="AI Forecast")
-        st.plotly_chart(fig2,use_container_width=True)
+        st.bar_chart(forecast_df.set_index("Day"))
 
-        # Insight
-        st.subheader("🧠 AI Market Insight")
+        st.dataframe(df)
 
-        if growth > 5:
-            st.success("Product demand is rapidly growing.")
-        elif growth > 0:
-            st.info("Stable market growth.")
-        else:
-            st.warning("Demand is decreasing.")
-
-        # Download
-        csv=df.to_csv(index=False).encode()
+        csv = df.to_csv().encode()
 
         st.download_button(
             "Download Report",
@@ -267,55 +249,44 @@ elif menu=="Product Analysis":
             "text/csv"
         )
 
-# -----------------------------
-# COMPARISON
-# -----------------------------
-elif menu=="Comparison":
+# ---------- Product Comparison ----------
+elif menu == "Product Comparison":
 
-    st.header("⚔️ Product Comparison")
+    st.header("⚔️ Compare Products")
 
-    plist=list(PRODUCTS_DB.keys())
+    products_list = list(PRODUCTS_DB.keys())
 
-    if len(plist)>=2:
+    if len(products_list) >= 2:
 
-        p1=st.selectbox("Product 1",plist)
-        p2=st.selectbox("Product 2",plist,index=1)
+        p1 = st.selectbox("Product 1",products_list)
+        p2 = st.selectbox("Product 2",products_list,index=1)
 
-        df=pd.DataFrame({
+        df = pd.DataFrame({
             p1:PRODUCTS_DB[p1],
             p2:PRODUCTS_DB[p2]
         })
 
-        fig=px.line(df,title="Trend Comparison")
-        st.plotly_chart(fig,use_container_width=True)
+        st.line_chart(df)
 
-# -----------------------------
-# TOP TRENDS
-# -----------------------------
-elif menu=="Top Trends":
+# ---------- Top Trends ----------
+elif menu == "Top Trends":
 
     st.header("🔥 Top Trending Products")
 
-    ranking=sorted(
-        PRODUCTS_DB.items(),
-        key=lambda x:x[1][-1],
-        reverse=True
-    )
+    ranking = sorted(PRODUCTS_DB.items(),
+                     key=lambda x:x[1][-1],
+                     reverse=True)
 
-    data=[]
-
-    for p,v in ranking:
-
-        data.append({
+    ranking_df = pd.DataFrame([
+        {
             "Product":p.title(),
-            "Score":v[-1],
-            "Demand":demand(v[-1]),
-            "Advice":investment(v[-1])
-        })
+            "Score":data[-1],
+            "Advice":investment_advice(data[-1])
+        }
+        for p,data in ranking
+    ])
 
-    rdf=pd.DataFrame(data)
-
-    st.dataframe(rdf)
+    st.dataframe(ranking_df)
 
 
 
